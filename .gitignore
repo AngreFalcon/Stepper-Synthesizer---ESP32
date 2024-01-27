@@ -3,3 +3,5 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+lib/NewEncoder-2.6/examples
+lib/SdFat-2.2.2/examples
