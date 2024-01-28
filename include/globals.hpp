@@ -17,11 +17,15 @@
 // MOSI = SIMO; SDO; DO; SO; MTSR
 // SCLK = SCK; CLK
 // SS = nCS; CS; CSB; CSN; nSS; STE; SYNC
-#define SD_CARD_INIT_SUCCESS 32 // indicator for successful initialization of SD card; yellow/green LED
-#define SD_CARD_INIT_FAILURE 33 // indicator for unsuccessful initialization of SD card; red LED
-#define ROTARY_CLK 25           // pin A/clock of rotary encoder
-#define ROTARY_DT 26            // pin B/data of rotary encoder
-#define ROTARY_SW 27            // push button of rotary encoder
+#define SD_INDIC_SDA 26       // SDA pin for SD card indicator
+#define SD_INDIC_SCL 27       // SCL pin for SD card indicator
+#define SD_INDIC_ADDRESS 0x3C // I2C address for SD card indicator
+#define SD_INDIC_WIDTH 128    // horizontal resolution for SD card indicator
+#define SD_INDIC_HEIGHT 64    // vertical resolution for SD card indicator
+#define SD_INDIC_RESET -1     // reset pin for SD card indicator. -1 indicates reset is shared with microcontroller reset
+#define ROTARY_CLK 34         // pin A/clock of rotary encoder
+#define ROTARY_DT 35          // pin B/data of rotary encoder
+#define ROTARY_SW 32          // push button of rotary encoder
 
 /*VSPI*/
 #define SD_MISO 19 // master input/slave output for SD card reader
@@ -59,18 +63,19 @@ extern volatile uint8_t prevEncoderValue; // this variable tracks the most recen
 extern const uint8_t encoderLowerLimit;   // here we define the lower limit of our encoder value. as a default, this will be zero; once hitting the upper limit, we should cycle around to the lower limit
 extern uint8_t encoderUpperLimit;         // this value should be equivalent to the number of files in our directory + 1. this will allow us to iterate over each directory item by turning the rotary encoder.
 
+// our struct here will contain the variables and member functions used to access the contents of our sd card.
 struct directoryContents {
   private:
-  std::string dirPath = "/"; // this will track our path. working out of root, this structure will only contained '/'; entering a sub-directory will append the name of that subdirectory, and leaving will pop it
+  std::string dirPath = "/"; // this will track our path. working out of root, this structure will only contain '/'; entering a sub-directory will append the name of that subdirectory, and leaving will remove it
   public:
   std::vector<std::string> contents;          // here we will store the contents of the working directory by name, for both printing and accessing
   bool highlighted[DISPLAY_LINES_PER_SCREEN]; // this variable keeps track of which of the displayed lines are highlighted; our "cursor". this allows us to ensure that, on rapid inputs, some lines aren't accidentally left highlighted when they shouldn't be
   uint16_t containedDirs;                     // this variable will keep track of the number of child directories within the working directory. these will always be at the front of our contents vector
 
-  void popWorkingDir();                    // this function will remove the latest subdirectory from our dirPath as we navigate through our file structure
+  void popWorkingDir(void);                // this function will remove the latest subdirectory from our dirPath as we navigate through our file structure
   void pushWorkingDir(const std::string&); // with this we will add a subdirectory to our dirPath string as we navigate deeper through our file structure
-  std::string getDirPath();
-	uint16_t getDirPathSize();
+  std::string getDirPath(void);
+  uint16_t getDirPathSize(void);
 };
 
 extern directoryContents myDir;      // this struct is the container we will use to keep track of the contents of our SD card during operation

@@ -4,13 +4,16 @@
 QueueHandle_t encoderQueue;
 NewEncoder* encoder;
 
-bool initializeRotary() {
+bool initializeRotary(void) {
   BaseType_t success = xTaskCreatePinnedToCore(handleEncoder, "Handle Encoder", 1900, NULL, 2, NULL, 1);
   if (!success) {
     if (SERIAL_DEBUG)
       printf("Failed to create handleEncoder task. Aborting.\n");
     return success;
   }
+  pinMode(ROTARY_CLK, INPUT);
+  pinMode(ROTARY_DT, INPUT);
+  pinMode(ROTARY_SW, INPUT);
   attachInterrupt(ROTARY_SW, rotaryButton, RISING);
   return success;
 }
@@ -62,10 +65,10 @@ void handleEncoder(void* pvParameters) {
       if (SERIAL_DEBUG)
         switch (currentEncoderstate.currentClick) {
         case NewEncoder::UpClick:
-          //Serial.println("at upper limit.");
+          // Serial.println("at upper limit.");
           break;
         case NewEncoder::DownClick:
-          //Serial.println("at lower limit.");
+          // Serial.println("at lower limit.");
           break;
         default:
           break;
@@ -83,18 +86,18 @@ void ESP_ISR callBack(NewEncoder* encPtr, const volatile NewEncoder::EncoderStat
   }
 }
 
-void IRAM_ATTR rotaryButton() {
+void IRAM_ATTR rotaryButton(void) {
   timeElapsedNew = millis();
   return;
 }
 
-bool updateSettings() {
+bool updateSettings(void) {
   NewEncoder::EncoderState state;
   prevEncoderValue = 0;
   return encoder->newSettings(encoderLowerLimit, encoderUpperLimit - 1, encoderLowerLimit, state);
 }
 
-uint8_t upOrDown() { // currently not used
+uint8_t upOrDown(void) { // currently not used
   NewEncoder::EncoderState state;
   encoder->getState(state);
   return state.currentClick;

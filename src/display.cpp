@@ -1,14 +1,13 @@
 #include "display.hpp"
-// credit to Bodmer on GitHub for providing the examples included with the TFT_eSPI library that these functions have been based on
 
 TFT_eSPI tft = TFT_eSPI();
 
-void initializeDisplay() {
+void initializeDisplay(void) {
   pinMode(LCD_BL, OUTPUT);
   digitalWrite(LCD_BL, HIGH);
 
   tft.begin();
-  tft.setRotation(3);
+  tft.setRotation(1);
   tft.setTextDatum(TL_DATUM);
   tft.setTextPadding(DISPLAY_HORIZONTAL_PADDING);
   tft.setTextColor(DISPLAY_TEXT, DISPLAY_BG);
@@ -21,7 +20,7 @@ uint8_t linePadding(uint8_t i) {
   return (i * DISPLAY_FONT_HEIGHT + (i * DISPLAY_FONT_VERTICAL_PADDING));
 }
 
-void refreshDisplay() {
+void refreshDisplay(void) {
   uint8_t lockedEncoderValue = prevEncoderValue;                                             // must lock value to avoid race condition; attempting to access prevEncoderValue appears to on occasion result in crash due to memory access violation
   uint8_t page = (lockedEncoderValue / DISPLAY_LINES_PER_SCREEN) * DISPLAY_LINES_PER_SCREEN; // we use this value to find the index offset needed to print our text to the screen
   if (myDir.contents.size() < 2 && !redrawDisplay)                                           // make sure we don't attempt to update the display if there are no directory contents to display. this is to ensure we do not accidentally print directory contents that do not actually exist
