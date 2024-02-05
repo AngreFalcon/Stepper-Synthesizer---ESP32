@@ -3,7 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
-lib/NewEncoder-2.6/examples
-lib/SdFat-2.2.2/examples
-lib/Adafruit_SSD1306-2.5.9/examples
-lib/Adafruit-GFX-Library-1.11.9/examples
+lib/**/doc
+lib/**/examples
+lib/**/.github
+lib/**/extras

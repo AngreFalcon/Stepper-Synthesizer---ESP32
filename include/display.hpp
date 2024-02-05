@@ -1,12 +1,8 @@
 #ifndef DISPLAY_HPP
 #define DISPLAY_HPP
-#pragma warning(push, 0) // disable warnings for libraries
 #include "TFT_eSPI.h"
 #include "globals.hpp"
 #include "rotary.hpp"
-#pragma warning(pop) // re-enable warnings
-
-extern TFT_eSPI tft; // this is the object that tft_espi uses to interface with our display
 
 void initializeDisplay(void);                                        // used to get our display ready by setting initial conditions before anything is printed
 uint8_t linePadding(uint8_t);                                        // takes as a parameter a line number and then, using our predefined vertical padding, calculates the y value to be passed into tft_espi's drawString() function

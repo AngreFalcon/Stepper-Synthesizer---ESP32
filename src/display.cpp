@@ -1,6 +1,6 @@
 #include "display.hpp"
 
-TFT_eSPI tft = TFT_eSPI();
+TFT_eSPI tft = TFT_eSPI(); // this is the object that tft_espi uses to interface with our display
 
 void initializeDisplay(void) {
   pinMode(LCD_BL, OUTPUT);

@@ -4,6 +4,7 @@ volatile uint8_t prevEncoderValue;
 const uint8_t encoderLowerLimit = 0;
 uint8_t encoderUpperLimit = 20;
 
+midiContents midiFileContents;
 directoryContents myDir;
 
 bool redrawDisplay = false;
@@ -28,4 +29,14 @@ std::string directoryContents::getDirPath(void) {
 
 uint16_t directoryContents::getDirPathSize(void) {
   return dirPath.size();
+}
+
+void directoryContents::reinitializeDirPath(void) {
+  dirPath = "/";
+  return;
+}
+
+void midiContents::allocateTrackChunks(){
+  //trackChunkArray.resize(headerChunk.headerTrackNum);
+  return;
 }

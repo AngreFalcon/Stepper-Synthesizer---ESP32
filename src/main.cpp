@@ -1,11 +1,10 @@
-#pragma warning(push, 0) // disable warnings for libraries
-#include "MidiFile.h"
 #include "display.hpp"
 #include "globals.hpp"
+#include "midi.hpp"
 #include "oled.hpp"
 #include "rotary.hpp"
 #include "sdio.hpp"
-#pragma warning(pop) // re-enable warnings
+#include "stepper.hpp"
 
 void setup() {
   // Open serial communications and wait for port to open:
@@ -16,6 +15,7 @@ void setup() {
   initializeRotary();
   initializeDisplay();
   initializeSDIndic(initializeSDCard());
+  initializeStepper();
 }
 
 void loop() {
@@ -24,6 +24,11 @@ void loop() {
     timeElapsedOld = timeElapsedNew;
   }
   refreshDisplay();
-	if (!querySD())
-		sdInitStatus(false);
+
+  if (!querySD()) {             // checks if sd card is removed after initialization
+    sdInitStatus(false);        // if sd card was removed, update indicator to reflect sd card status
+    while (!initializeSDCard()) // attempt to reinitialize sd card
+      delay(500);               // if reinitialization of sd card fails, wait 1 second before trying again
+    sdInitStatus(true);         // once reinitialization of sd card succeeds, update indicator
+  }
 }

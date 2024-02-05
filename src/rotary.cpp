@@ -1,8 +1,8 @@
 #include "rotary.hpp"
 // much of handleEncoder() and callBack() functions are thanks to the examples provided by the NewEncoder library. credit to gfvalvo on GitHub, the author of the library
 
-QueueHandle_t encoderQueue;
-NewEncoder* encoder;
+QueueHandle_t encoderQueue; // the rotary encoder library uses this object to keep track of inputs in between interrupts so that information is not lost during rapid actuation of our encoder
+NewEncoder* encoder;        // this is the object that references our rotary encoder and is used for tracking attributes such as direction of input
 
 bool initializeRotary(void) {
   BaseType_t success = xTaskCreatePinnedToCore(handleEncoder, "Handle Encoder", 1900, NULL, 2, NULL, 1);

@@ -1,11 +1,6 @@
 #ifndef ROTARY_H
 #define ROTARY_H
-#pragma warning(push, 0) // disable warnings for libraries
 #include "globals.hpp"
-#pragma warning(pop) // re-enable warnings
-
-extern QueueHandle_t encoderQueue; // the rotary encoder library uses this object to keep track of inputs in between interrupts so that information is not lost during rapid actuation of our encoder
-extern NewEncoder* encoder;        // this is the object that references our rotary encoder and is used for tracking attributes such as direction of input
 
 bool initializeRotary(void);
 void handleEncoder(void* pvParameters);
