@@ -1,8 +1,8 @@
 #ifndef ROTARY_H
 #define ROTARY_H
-#include "globals.hpp"
+#include "NewEncoder.h"
 
-bool initializeRotary(void);
+bool initializeRotary(void); // used to configure parameters for our rotary encoder such as upper and lower limits, as well as attach our interrupt to handle rotary encoder events
 void handleEncoder(void* pvParameters);
 void ESP_ISR callBack(NewEncoder* encPtr, const volatile NewEncoder::EncoderState* state, void* uPtr);
 void IRAM_ATTR rotaryButton(void); // here is our interrupt for tracking button clicks of our rotary encoder

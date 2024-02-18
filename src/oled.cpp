@@ -1,4 +1,8 @@
 #include "oled.hpp"
+#include "globals.hpp"
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Wire.h>
 
 const unsigned char PROGMEM sdSuccessIcon[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -94,27 +98,30 @@ const unsigned char PROGMEM sdFailureIcon[] = {
 
 Adafruit_SSD1306 display(SD_INDIC_WIDTH, SD_INDIC_HEIGHT, &Wire, SD_INDIC_RESET);
 
-void initializeSDIndic(bool sdInit) {
+void initializeSDIndic(const bool sdInit) {
   Wire.begin(SD_INDIC_SDA, SD_INDIC_SCL);
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SD_INDIC_ADDRESS) && SERIAL_DEBUG)
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SD_INDIC_ADDRESS) && SERIAL_DEBUG) {
     Serial.println(F("SSD1306 allocation failed"));
+  }
 
-  display.setRotation(3);
+  display.setRotation(3);              // make our OLED display vertically
   display.clearDisplay();              // clear any data that may be present in our buffer before attempting to draw to our OLED
   display.setTextSize(2);              // due to the small size of our panel, apply 2x multiplier to ensure text is readable
   display.setTextColor(SSD1306_WHITE); // must set text color, otherwise our text, should we attempt to display any, will not show up on our OLED
   display.cp437(true);                 // Use full 256 char 'Code Page 437' font
 
-  sdInitStatus(sdInit);
+  sdInitStatus(sdInit); // print either our success or fail icon depending on the current status of our SD card
   return;
 }
 
-void sdInitStatus(bool success) {
+void sdInitStatus(const bool success) {
   display.clearDisplay();
-  if (success)
+  if (success) {
     display.drawXBitmap(0, 32, sdSuccessIcon, 64, 64, SSD1306_WHITE);
-  else
+  }
+  else {
     display.drawXBitmap(0, 32, sdFailureIcon, 64, 64, SSD1306_WHITE);
+  }
   display.display();
   return;
 }
