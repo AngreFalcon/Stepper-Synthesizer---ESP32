@@ -5,9 +5,11 @@
 #include "sdio-directoryContents.hpp"
 #include <queue>
 
-// here we will put the definitions for our global SD card library variables
-FsFile loadedFile; // this file object is used to open and access the contents of our selected file
-SdFs sd;           // this object is used to initialize and access the contents of our SD card
+// this file object is used to open and access the contents of our selected file
+FsFile loadedFile; 
+
+// this object is used to initialize and access the contents of our SD card
+SdFs sd;           
 
 bool initializeSDCard(void) {
   if (SERIAL_DEBUG) {
@@ -71,16 +73,28 @@ void readDirectoryContents(void) {
 
 void navigateDirectories(void) {
   uint8_t lockedEncoderValue = prevEncoderValue;
-  if (lockedEncoderValue >= myDir.contents.size() || (lockedEncoderValue + myDir.getDirPathSize() - 1 == 0)) { // ensure that our encoder isn't pointing to a file object that doesn't exist, and that we aren't trying to navigate to a higher directory from root
+
+  // ensure that our encoder isn't pointing to a file object that doesn't exist
+  // and that we aren't trying to navigate to a higher directory from root
+  if (lockedEncoderValue >= myDir.contents.size() || (lockedEncoderValue + myDir.getDirPathSize() - 1 == 0)) { 
     return;
   }
-  else if ((lockedEncoderValue == 0 || myDir.contents.size() <= 1) && myDir.getDirPathSize() > 1) { // if the user wants to navigate to a parent directory, or the current working directory is empty, move up a layer in our file structure
+
+  // if the user wants to navigate to a parent directory
+  // or the current working directory is empty
+  // move up a layer in our file structure
+  else if ((lockedEncoderValue == 0 || myDir.contents.size() <= 1) && myDir.getDirPathSize() > 1) { 
     myDir.popWorkingDir();
   }
-  else if (lockedEncoderValue <= myDir.containedDirs && myDir.contents.size() > 1) { // if the user selects a file object that is a directory, navigate to that directory
+
+  // if the user selects a file object that is a directory
+  // navigate to that directory
+  else if (lockedEncoderValue <= myDir.containedDirs && myDir.contents.size() > 1) { 
     myDir.pushWorkingDir(myDir.contents[lockedEncoderValue]);
   }
-  else { // if all other cases are false, the user selected a file
+
+  // if all other cases are false, the user selected a file
+  else { 
     openMidi(lockedEncoderValue);
     return;
   }
@@ -89,7 +103,8 @@ void navigateDirectories(void) {
   return;
 }
 
-bool dirEmpty(FsFile* dir) { // currently not used
+// currently not used
+bool dirEmpty(FsFile* dir) { 
   FsFile myFile;
   return !myFile.openNext(dir, SD_FILE_READ);
 }
@@ -122,13 +137,17 @@ bool querySD(void) {
 
 void openMidi(const uint8_t index) {
   FsFile dir;
+  std::queue<uint8_t>* fileContents = new std::queue<uint8_t>;
   dir.open(myDir.getDirPath().c_str());
   loadedFile.open(&dir, myDir.contents[index].c_str(), SD_FILE_READ);
   while (loadedFile.peek() != -1) {
-    songData.writeByte((uint8_t)loadedFile.read());
+    fileContents->push((uint8_t)loadedFile.read());
   }
   loadedFile.close();
-  songData.parseMidi();
+  songData.assignQueue(fileContents);
+  if (!songData.parseMidi()) {
+    return;
+  }
   songData.playMidi();
   return;
 }

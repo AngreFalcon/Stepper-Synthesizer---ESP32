@@ -2,7 +2,8 @@
 #include "FastAccelStepper.h"
 #include "globals.hpp"
 #include "midi.hpp"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations" // get rid of annoying library warning
+// get rid of annoying library warning
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 FastAccelStepperEngine engine = FastAccelStepperEngine();
 std::array<FastAccelStepper*, STEPPER_CHANNELS> stepper;
@@ -19,20 +20,17 @@ void initializeStepper(void) {
   return;
 }
 
-void playNote(const uint32_t deltaTime, const uint8_t note, const uint8_t event) {
+void playNote(const uint32_t deltaTime, const uint32_t note, const uint8_t event) {
   // deltaTime = number of microseconds since last event
-  //while (stepper[0]->isQueueFull());
+  delayMicroseconds(deltaTime);
+  while (stepper[0]->isQueueFull());
+  stepper[0]->setSpeedInMilliHz(note);
+  while (stepper[0]->isQueueFull());
   if ((event & 0xF0) == MIDI_NOTE_ON) {
-    stepper[0]->setSpeedInHz(note); //(event & 0x0F)) % 4
-    stepper[0]->applySpeedAcceleration();
-    //stepper[0]->move((deltaTime * note) / 1000000);
     stepper[0]->runForward();
-    delayMicroseconds(deltaTime);
   }
   else if ((event & 0xF0) == MIDI_NOTE_OFF) {
-    stepper[0]->forceStop();
-    delayMicroseconds(deltaTime);
+    stepper[0]->stopMove();
   }
-
   return;
 }

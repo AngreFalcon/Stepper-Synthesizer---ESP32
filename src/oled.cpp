@@ -104,13 +104,27 @@ void initializeSDIndic(const bool sdInit) {
     Serial.println(F("SSD1306 allocation failed"));
   }
 
-  display.setRotation(3);              // make our OLED display vertically
-  display.clearDisplay();              // clear any data that may be present in our buffer before attempting to draw to our OLED
-  display.setTextSize(2);              // due to the small size of our panel, apply 2x multiplier to ensure text is readable
-  display.setTextColor(SSD1306_WHITE); // must set text color, otherwise our text, should we attempt to display any, will not show up on our OLED
-  display.cp437(true);                 // Use full 256 char 'Code Page 437' font
+  // make our OLED display vertically
+  display.setRotation(3);              
 
-  sdInitStatus(sdInit); // print either our success or fail icon depending on the current status of our SD card
+  // clear any data that may be present in our buffer
+  // before attempting to draw to our OLED
+  display.clearDisplay();              
+
+  // due to the small size of our panel
+  // apply 2x multiplier to ensure text is readable
+  display.setTextSize(2);              
+
+  // must set text color, otherwise our text
+  // should we attempt to display any, will not show up on our OLED
+  display.setTextColor(SSD1306_WHITE); 
+
+  // Use full 256 char 'Code Page 437' font
+  display.cp437(true);                 
+
+  // print either our success or fail icon
+  // depending on the current status of our SD card
+  sdInitStatus(sdInit); 
   return;
 }
 

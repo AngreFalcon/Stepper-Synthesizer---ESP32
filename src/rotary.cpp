@@ -1,10 +1,22 @@
 #include "rotary.hpp"
 #include "globals.hpp"
-// much of handleEncoder() and callBack() functions are thanks to the examples provided by the NewEncoder library. credit to gfvalvo on GitHub, the author of the library
+// much of handleEncoder() and callBack() functions are thanks
+// to the examples provided by the NewEncoder library
+// credit to gfvalvo on GitHub, the author of the library
 
-QueueHandle_t encoderQueue;          // the rotary encoder library uses this object to keep track of inputs in between interrupts so that information is not lost during rapid actuation of our encoder
-NewEncoder* encoder;                 // this is the object that references our rotary encoder and is used for tracking attributes such as direction of input
-const uint8_t encoderLowerLimit = 0; // here we define the lower limit of our encoder value. as a default, this will be zero; once hitting the upper limit, we should cycle around to the lower limit
+// the rotary encoder library uses this object to keep track of inputs
+// in between interrupts so that information is not lost during rapid actuation
+// of our encoder
+QueueHandle_t encoderQueue;          
+
+// this is the object that references our rotary encoder
+// and is used for tracking attributes such as direction of input
+NewEncoder* encoder;                 
+
+// here we define the lower limit of our encoder value
+// as a default, this will be zero; once hitting the upper limit
+// we should cycle around to the lower limit
+const uint8_t encoderLowerLimit = 0; 
 
 bool initializeRotary(void) {
   BaseType_t success = xTaskCreatePinnedToCore(handleEncoder, "Handle Encoder", 1900, NULL, 2, NULL, 1);
@@ -24,30 +36,33 @@ bool initializeRotary(void) {
 void handleEncoder(void* pvParameters) {
   NewEncoder::EncoderState currentEncoderstate;
   int16_t currentValue; 
-
   encoderQueue = xQueueCreate(1, sizeof(NewEncoder::EncoderState));
+
+  // this conditional ensures that the encoder queue initialized successfully
   if (encoderQueue == nullptr) {
     if (SERIAL_DEBUG) {
       Serial.println("Failed to create encoderQueue. Aborting");
     }
     vTaskDelete(nullptr);
-  } // this conditional ensures that the encoder queue initialized successfully
-
+  } 
   encoder = new NewEncoder(ROTARY_CLK, ROTARY_DT, encoderLowerLimit, encoderUpperLimit, encoderLowerLimit, FULL_PULSE);
+
+  // this conditional ensures that the encoder object allocated successfully
   if (encoder == nullptr) {
     if (SERIAL_DEBUG) {
       Serial.println("Failed to allocate NewEncoder object. Aborting.");
     }
     vTaskDelete(nullptr);
-  } // this conditional ensures that the encoder object allocated successfully
+  } 
 
+  // this conditional ensures that the encoder object started successfully
   if (!encoder->begin()) {
     if (SERIAL_DEBUG) {
       Serial.println("Encoder failed to start. Check pin assignments and available interrupts. Aborting.");
     }
     delete encoder;
     vTaskDelete(nullptr);
-  } // this conditional ensures that the encoder object started successfully
+  } 
 
   encoder->getState(currentEncoderstate);
   prevEncoderValue = currentEncoderstate.currentValue;
@@ -59,32 +74,12 @@ void handleEncoder(void* pvParameters) {
 
   for (;;) {
     xQueueReceive(encoderQueue, &currentEncoderstate, portMAX_DELAY);
-    if (SERIAL_DEBUG) {
-      Serial.print("Encoder: ");
-    }
     currentValue = currentEncoderstate.currentValue;
     if (currentValue != prevEncoderValue) {
-      if (SERIAL_DEBUG) {
-        Serial.print(currentValue);
-      }
       if (prevEncoderValue / DISPLAY_LINES_PER_SCREEN != currentValue / DISPLAY_LINES_PER_SCREEN) {
         redrawDisplay = true;
       }
       prevEncoderValue = currentValue;
-    }
-    else { // print to serial monitor, if debug macro is true, whether our encoder has hit its upper or lower limit
-      if (SERIAL_DEBUG) {
-        switch (currentEncoderstate.currentClick) {
-        case NewEncoder::UpClick:
-          // Serial.println("at upper limit.");
-          break;
-        case NewEncoder::DownClick:
-          // Serial.println("at lower limit.");
-          break;
-        default:
-          break;
-        }
-      }
     }
   }
   vTaskDelete(nullptr);
@@ -109,7 +104,8 @@ bool updateSettings(void) {
   return encoder->newSettings(encoderLowerLimit, encoderUpperLimit - 1, encoderLowerLimit, state);
 }
 
-uint8_t upOrDown(void) { // currently not used
+// currently not used
+uint8_t upOrDown(void) { 
   NewEncoder::EncoderState state;
   encoder->getState(state);
   return state.currentClick;
