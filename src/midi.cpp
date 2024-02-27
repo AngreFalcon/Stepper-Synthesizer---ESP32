@@ -2,6 +2,7 @@
 #include "stepper.hpp"
 #include <algorithm>
 #include <cmath>
+#include <sstream>
 
 midiFile songData;
 
@@ -98,7 +99,7 @@ bool midiFile::populateTrackChunks(const uint32_t index, std::deque<midiEvent>& 
     // of our note on events. if velocity is 0,
     // volume is 0 and our event is functionally
     // a note off event
-    if ((tempEvent.eventType & 0xF0) == MIDI_NOTE_ON && (tempEvent.eventData & 0x00FF) == 0) {
+    if (((tempEvent.eventType & 0xF0) == MIDI_NOTE_ON) && ((tempEvent.eventData & 0x00FF) == 0)) {
       tempEvent.eventType = (tempEvent.eventType & 0x8F);
     }
 
@@ -213,6 +214,9 @@ void midiFile::sortEvents(std::deque<midiEvent>& trackData) {
 
 void midiFile::convertDeltaTime(std::deque<midiEvent>& trackData) {
   uint32_t workingTempo = 500000;
+
+  // it's important that we first convert our deltaTimes from absolute value
+  // since the start of the track back to relative values since the last event
   for (uint32_t i = trackData.size(); i > 0; i--) {
     if (trackData[i].deltaTime != 0) {
       trackData[i].deltaTime = trackData[i].deltaTime - trackData[i - 1].deltaTime;
@@ -221,6 +225,9 @@ void midiFile::convertDeltaTime(std::deque<midiEvent>& trackData) {
       break;
     }
   }
+
+  // now we check the format of our header chunk's tickdivs value
+  // this tells us if we're using metrical timing
   if (!(this->headerChunk.headerDiv >> 15)) {
     for (uint32_t i = 0; i < trackData.size(); i++) {
       if ((trackData[i].eventType == MIDI_META_EVENT) && (trackData[i].metaType == MIDI_META_TEMPO)) {
@@ -229,6 +236,8 @@ void midiFile::convertDeltaTime(std::deque<midiEvent>& trackData) {
       trackData[i].deltaTime = (workingTempo * trackData[i].deltaTime) / this->headerChunk.headerDiv;
     }
   }
+
+  // or if we're using timecodes
   else {
     for (uint32_t i = 0; i < trackData.size(); i++) {
       trackData[i].deltaTime = pow((~((this->headerChunk.headerDiv >> 8) - 1) * (this->headerChunk.headerDiv & 0x00FF) * 1000), -1) * trackData[i].deltaTime;
@@ -239,8 +248,9 @@ void midiFile::convertDeltaTime(std::deque<midiEvent>& trackData) {
 
 void midiFile::enqueueEvents(std::deque<midiEvent>& trackData) {
   this->eventQueue = new std::queue<midiEvent>;
-  for (uint32_t i = 0; i < trackData.size(); i++) {
+  while (!trackData.empty()) {
     if ((trackData.front().getEventOrChannel(true) == MIDI_NOTE_ON) || (trackData.front().getEventOrChannel(true) == MIDI_NOTE_OFF)) {
+      trackData.front().eventData = midi::getFreq(trackData.front().eventData);
       this->eventQueue->push(trackData.front());
     }
     trackData.pop_front();
@@ -249,13 +259,15 @@ void midiFile::enqueueEvents(std::deque<midiEvent>& trackData) {
 }
 
 void midiFile::playMidi(void) {
-  if (SERIAL_DEBUG) {
-    printQueue();
-  }
-  for (uint32_t i = 0; !this->eventQueue->empty(); i++) {
-    playNote(this->eventQueue->front().deltaTime, midi::getFreq(this->eventQueue->front().eventData), this->eventQueue->front().eventType);
+  std::stringstream debugString;
+  uint16_t eventNum = 1;
+  while (!this->eventQueue->empty()) {
+    debugString << "\n" << eventNum;
+    playNote(this->eventQueue->front().deltaTime, this->eventQueue->front().eventData, this->eventQueue->front().eventType, debugString);
     this->eventQueue->pop();
+    eventNum++;
   }
+  Serial.println(debugString.str().c_str());
   delete this->eventQueue;
   this->eventQueue = NULL;
   return;
@@ -277,7 +289,7 @@ void midiFile::printQueue(void) {
     Serial.print(" | Delta Time in uS: ");
     Serial.print(this->eventQueue->front().deltaTime);
     deltaTime += this->eventQueue->front().deltaTime;
-    Serial.print(" | Note: ");
+    Serial.print(" | Note in mHz: ");
     Serial.print(this->eventQueue->front().eventData);
     Serial.print(" | Event: ");
     Serial.print((this->eventQueue->front().getEventOrChannel(true) == 0x80) ? "Note Off" : "Note On");
@@ -292,10 +304,13 @@ void midiFile::printQueue(void) {
 }
 
 uint32_t midi::getFreq(const uint8_t note) {
-  uint32_t index = note % noteFreq.size();
-  uint8_t octave = note / noteFreq.size();
-  if ((note / noteFreq.size()) > MIDI_OCTAVE_MAX) {
+  uint8_t index = ((note + 1) & 0x7F) % noteFreq.size();
+  int8_t octave = (note / noteFreq.size());
+  if (octave > MIDI_OCTAVE_MAX) {
     octave = MIDI_OCTAVE_MAX;
+  }
+  else if (octave < MIDI_OCTAVE_MIN) {
+    octave = MIDI_OCTAVE_MIN;
   }
   return (noteFreq[index] * pow(2, octave));
 }

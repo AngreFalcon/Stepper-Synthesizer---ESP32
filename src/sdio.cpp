@@ -148,6 +148,9 @@ void openMidi(const uint8_t index) {
   if (!songData.parseMidi()) {
     return;
   }
+  if (SERIAL_DEBUG) {
+    //songData.printQueue();
+  }
   songData.playMidi();
   return;
 }

@@ -7,3 +7,4 @@ lib/**/doc
 lib/**/examples
 lib/**/.github
 lib/**/extras
+test
