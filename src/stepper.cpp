@@ -6,39 +6,93 @@
 // get rid of annoying library warning
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
+struct NoteChannel {
+  uint32_t note = 0;
+  uint8_t channel = NO_CHANNEL;
+};
+
 FastAccelStepperEngine engine = FastAccelStepperEngine();
 std::array<FastAccelStepper*, STEPPER_CHANNELS> stepper;
 
 void initializeStepper(void) {
+  const std::array<uint8_t, STEPPER_CHANNELS> mtrSteps = { MTR_STEPS };
   engine.init();
   stepper.fill(NULL);
-  stepper[0] = engine.stepperConnectToPin(MTR_0_STEP);
-  stepper[1] = engine.stepperConnectToPin(MTR_1_STEP);
-  stepper[2] = engine.stepperConnectToPin(MTR_2_STEP);
-  stepper[3] = engine.stepperConnectToPin(MTR_3_STEP);
   for (uint8_t j = 0; j < STEPPER_CHANNELS; j++) {
-    if (stepper[j]) {
-      stepper[j]->setAutoEnable(true);
-      stepper[j]->setAcceleration(INT_MAX);
-      stepper[j]->applySpeedAcceleration();
-    }
+    stepper[j] = engine.stepperConnectToPin(mtrSteps[j]);
+    stepper[j]->setAutoEnable(true);
+    stepper[j]->setAcceleration(INT_MAX);
+    stepper[j]->applySpeedAcceleration();
   }
   return;
 }
 
+uint8_t findStepperPreferPoly(const std::array<NoteChannel, STEPPER_CHANNELS>& activeChannels, const uint8_t channel) {
+  uint8_t stepperOnChannel = NOT_FOUND;
+  for (uint8_t i = 0; i < STEPPER_CHANNELS; ++i) {
+    if (activeChannels[i].channel == NO_CHANNEL) {
+      // prefer first available stepper
+      return i;
+    }
+    if (activeChannels[i].channel == channel && stepperOnChannel == NOT_FOUND) {
+      // use already active stepper as a fallback, if one is active for this channel
+      stepperOnChannel = i;
+    }
+  }
+  return stepperOnChannel;
+}
+
+uint8_t findStepperPreferMono(const std::array<NoteChannel, STEPPER_CHANNELS>& activeChannels, const uint8_t channel) {
+  uint8_t firstFound = NOT_FOUND;
+  for (uint8_t i = 0; i < STEPPER_CHANNELS; ++i) {
+    if (activeChannels[i].channel == channel) {
+      // prefer taking over an already active stepper on this channel
+      return i;
+    }
+    if (activeChannels[i].channel == NO_CHANNEL && firstFound == NOT_FOUND) {
+      // use the first available stepper as a fallback
+      firstFound = i;
+    }
+  }
+  return firstFound;
+}
+
+uint8_t findActiveStepper(const std::array<NoteChannel, STEPPER_CHANNELS>& activeChannels, const uint32_t note, const uint8_t channel) {
+  for (uint8_t i = 0; i < STEPPER_CHANNELS; ++i) {
+    if (activeChannels[i].channel == channel && activeChannels[i].note == note) {
+      return i;
+    }
+  }
+  return NOT_FOUND;
+}
+
 void playNote(const uint32_t deltaTime, const uint32_t note, const uint8_t event, std::stringstream& debugString) {
-  static std::array<uint32_t, 16> prevNote = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-  const uint8_t channel = (event & 0x0F);
+  const uint8_t channel = (event & 0x0F), eventType = (event >> 4);
+  static std::array<NoteChannel, STEPPER_CHANNELS> activeChannels {};
   delayMicroseconds(deltaTime);
-  stepper[0]->setSpeedInMilliHz(note);
-  if ((event >> 4) == 9) {
-    while (stepper[0]->isStopping());
-    stepper[0]->runForward();
-    prevNote[channel] = note;
+
+  uint8_t stepperIdx = NOT_FOUND;
+  if (eventType == MIDI_NOTE_ON >> 4) {
+    stepperIdx = findStepperPreferPoly(activeChannels, channel);
+    if (stepperIdx == NOT_FOUND) {
+      return;
+    }
+    activeChannels[stepperIdx].channel = channel;
+    activeChannels[stepperIdx].note = note;
+    stepper[stepperIdx]->setSpeedInMilliHz(note);
+    while (stepper[stepperIdx]->isStopping())
+      ;
+    stepper[stepperIdx]->runForward();
   }
-  else if (note == prevNote[channel]) {
-    stepper[0]->stopMove();
+  else {
+    stepperIdx = findActiveStepper(activeChannels, note, channel);
+    if (stepperIdx == NOT_FOUND) {
+      return;
+    }
+    activeChannels[stepperIdx].channel = NO_CHANNEL;
+    stepper[stepperIdx]->stopMove();
   }
+
   debugString << " - DeltaTime in uS: " << deltaTime << " | Event: " << (uint16_t)event << " | Note in mHz: " << note;
   return;
 }

@@ -42,7 +42,7 @@
 // whose frequency is too great for us to play
 #define MIDI_OCTAVE_MAX 6
 
-#define MIDI_OCTAVE_MIN -1
+#define MIDI_OCTAVE_MIN -2
 
 // one of four SMPTE standard values denoting 24 frames per second
 #define SMPTE_24 0xE8

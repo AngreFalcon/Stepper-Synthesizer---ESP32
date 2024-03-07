@@ -292,7 +292,7 @@ void midiFile::printQueue(void) {
     Serial.print(" | Note in mHz: ");
     Serial.print(this->eventQueue->front().eventData);
     Serial.print(" | Event: ");
-    Serial.print((this->eventQueue->front().getEventOrChannel(true) == 0x80) ? "Note Off" : "Note On");
+    Serial.print((this->eventQueue->front().getEventOrChannel(true) == MIDI_NOTE_OFF) ? "Note Off" : "Note On");
     Serial.print(" | Channel: ");
     Serial.println(this->eventQueue->front().getEventOrChannel(false));
     this->eventQueue->push(this->eventQueue->front());

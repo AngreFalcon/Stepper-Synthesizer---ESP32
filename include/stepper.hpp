@@ -8,10 +8,13 @@
 // for our ESP32
 #define STEPPER_CHANNELS 4 
 
+#define NO_CHANNEL 255
+#define NOT_FOUND 255
+
 //const std::array<uint8_t, STEPPER_CHANNELS> stepperPins = { MTR_0_STEP, MTR_1_STEP, MTR_2_STEP, MTR_3_STEP };
 
 // this function initializes our stepper motor object and sets default parameters
-void initializeStepper(void); 
+void initializeStepper(void);
 
 // this function takes in our deltaTime in microseconds,
 // note as frequency in millihertz, and event as an 8 bit integer

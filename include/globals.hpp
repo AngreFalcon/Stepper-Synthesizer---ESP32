@@ -47,14 +47,7 @@
 #define ROTARY_SW 34
 
 // pins for stepper motor actuation
-#define MTR_0_STEP 4
-#define MTR_1_STEP 32
-#define MTR_2_STEP 33
-#define MTR_3_STEP 25
-#define MTR_4_STEP 255
-#define MTR_5_STEP 255
-#define MTR_6_STEP 255
-#define MTR_7_STEP 255
+#define MTR_STEPS 4, 32, 33, 25
 
 /*VSPI*/
 // master input/slave output for SD card reader
