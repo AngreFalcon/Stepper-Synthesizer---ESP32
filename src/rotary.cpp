@@ -75,6 +75,7 @@ void handleEncoder(void* pvParameters) {
   for (;;) {
     xQueueReceive(encoderQueue, &currentEncoderstate, portMAX_DELAY);
     currentValue = currentEncoderstate.currentValue;
+    timeElapsedOld = timeElapsedNew;
     if (currentValue != prevEncoderValue) {
       if (prevEncoderValue / DISPLAY_LINES_PER_SCREEN != currentValue / DISPLAY_LINES_PER_SCREEN) {
         redrawDisplay = true;

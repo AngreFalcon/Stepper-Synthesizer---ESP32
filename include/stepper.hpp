@@ -22,6 +22,6 @@ void initializeStepper(void);
 // the deltaTime provided dictates the duration of the previously provided
 // note; upon calling this function, the note passed in will continue 
 // to sound until a note off event occurs or a new frequency is provided
-void playNote(const uint32_t deltaTime, const uint32_t note, const uint8_t event, std::stringstream& debugString);
+void playNote(const uint32_t deltaTime, const uint32_t note, const uint8_t event, const bool polyphonic, std::stringstream& debugString);
 
 #endif

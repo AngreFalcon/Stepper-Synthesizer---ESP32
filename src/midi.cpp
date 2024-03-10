@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
+#include <vector>
 
 midiFile songData;
 
@@ -19,12 +20,13 @@ bool midiFile::parseMidi(void) {
     return false;
   }
 
-  for (uint32_t i = 0; i < this->headerChunk.headerTrackNum; i++) {
+  for (uint8_t i = 0; i < this->headerChunk.headerTrackNum; i++) {
     if (!populateTrackChunks(i, trackData)) {
       return false;
     }
   }
 
+  analyzeOverlaps(trackData);
   sortEvents(trackData);
   convertDeltaTime(trackData);
   enqueueEvents(trackData);
@@ -49,6 +51,7 @@ bool midiFile::populateHeaderChunk(void) {
 
   // find the number of tracks in the midi file
   this->headerChunk.headerTrackNum = readChunkData16();
+  trackPolyphony.resize(headerChunk.headerTrackNum, false);
 
   // finally, read in the division information
   // to know what to expect of our midi's delta times
@@ -56,9 +59,10 @@ bool midiFile::populateHeaderChunk(void) {
   return true;
 }
 
-bool midiFile::populateTrackChunks(const uint32_t index, std::deque<midiEvent>& trackData) {
+bool midiFile::populateTrackChunks(const uint8_t trackNum, std::deque<midiEvent>& trackData) {
   uint8_t prevEvent = 0;
   uint32_t trackChunkLen = 0;
+  uint64_t absoluteDT = 0;
 
   // check to ensure the track type matches the expected value
   // if not, exit early
@@ -80,17 +84,16 @@ bool midiFile::populateTrackChunks(const uint32_t index, std::deque<midiEvent>& 
   // to ensure we read only what's necessary
   for (uint32_t i = 0; i < trackChunkLen;) {
     midiFile::midiEvent tempEvent;
-
+    tempEvent.track = trackNum;
     i += readVariableLen(tempEvent.deltaTime);
 
     // to allow use to merge all tracks into a single
     // queue of events later, we must convert
-    // our deltaTimes from values relative to the 
-    // previous event to absolute times from the 
+    // our deltaTimes from values relative to the
+    // previous event to absolute times from the
     // start of the track
-    if (!trackData.empty()) {
-      tempEvent.deltaTime += trackData.back().deltaTime;
-    }
+    tempEvent.deltaTime += absoluteDT;
+    absoluteDT = tempEvent.deltaTime;
 
     i += readMidiEvent(prevEvent, tempEvent.eventType);
     i += readMidiEventData(tempEvent.eventType, tempEvent.metaType, tempEvent.eventData);
@@ -221,9 +224,6 @@ void midiFile::convertDeltaTime(std::deque<midiEvent>& trackData) {
     if (trackData[i].deltaTime != 0) {
       trackData[i].deltaTime = trackData[i].deltaTime - trackData[i - 1].deltaTime;
     }
-    else {
-      break;
-    }
   }
 
   // now we check the format of our header chunk's tickdivs value
@@ -250,7 +250,7 @@ void midiFile::enqueueEvents(std::deque<midiEvent>& trackData) {
   this->eventQueue = new std::queue<midiEvent>;
   while (!trackData.empty()) {
     if ((trackData.front().getEventOrChannel(true) == MIDI_NOTE_ON) || (trackData.front().getEventOrChannel(true) == MIDI_NOTE_OFF)) {
-      trackData.front().eventData = midi::getFreq(trackData.front().eventData);
+      trackData.front().eventData = midi::getFreq((uint8_t)trackData.front().eventData);
       this->eventQueue->push(trackData.front());
     }
     trackData.pop_front();
@@ -261,9 +261,12 @@ void midiFile::enqueueEvents(std::deque<midiEvent>& trackData) {
 void midiFile::playMidi(void) {
   std::stringstream debugString;
   uint16_t eventNum = 1;
+  midiFile::midiEvent currentEvent;
   while (!this->eventQueue->empty()) {
-    debugString << "\n" << eventNum;
-    playNote(this->eventQueue->front().deltaTime, this->eventQueue->front().eventData, this->eventQueue->front().eventType, debugString);
+    currentEvent = this->eventQueue->front();
+    debugString << "\n"
+                << eventNum;
+    playNote(currentEvent.deltaTime, currentEvent.eventData, currentEvent.eventType, trackPolyphony[currentEvent.track], debugString);
     this->eventQueue->pop();
     eventNum++;
   }
@@ -271,6 +274,35 @@ void midiFile::playMidi(void) {
   delete this->eventQueue;
   this->eventQueue = NULL;
   return;
+}
+
+void midiFile::analyzeOverlaps(const std::deque<midiFile::midiEvent>& trackData) {
+  const uint32_t scientificallyChosenOverlapThreshold = 250000;
+  for (size_t i = 0; i < trackData.size(); i++) {
+    if ((trackData[i].eventType & 0xF0) == MIDI_NOTE_ON && trackPolyphony[trackData[i].track]) {
+      const midiFile::midiEvent* noteOn = &trackData[i];
+      const midiFile::midiEvent* noteOff;
+      std::vector<const midiFile::midiEvent*> intersectingNoteOns;
+      // Grab all the unrelated note_on events until the corresponding note_off
+      for (size_t j = i + 1; j < trackData.size(); j++) {
+        if (((trackData[j].eventType ^ noteOn->eventType) == 0x10) && !(trackData[j].eventData ^ noteOn->eventData)) {
+          noteOff = &trackData[j];
+          break;
+        }
+        else if ((trackData[j].eventType & 0xF0) == MIDI_NOTE_ON && trackData[j].track == noteOn->track) {
+          intersectingNoteOns.push_back(&trackData[j]);
+        }
+      }
+      // If the average overlap duration is larger than a threshold, then the track is polyphonic
+      uint32_t overlapAvg = 0;
+      for (const midiFile::midiEvent* event : intersectingNoteOns) {
+        overlapAvg += (noteOff->deltaTime - event->deltaTime) / intersectingNoteOns.size();
+      }
+      if (overlapAvg > scientificallyChosenOverlapThreshold) {
+        trackPolyphony[noteOn->track] = true;
+      }
+    }
+  }
 }
 
 void midiFile::printQueue(void) {
@@ -304,8 +336,10 @@ void midiFile::printQueue(void) {
 }
 
 uint32_t midi::getFreq(const uint8_t note) {
-  uint8_t index = ((note + 1) & 0x7F) % noteFreq.size();
-  int8_t octave = (note / noteFreq.size());
+  // uint8_t index = ((note + 1) & 0x7F) % noteFreq.size();
+  // int8_t octave = ((note + 1) / noteFreq.size()) - 1;
+  uint8_t index = (note & 0x7F) % noteFreq.size();
+  int8_t octave = (note / noteFreq.size()) - 1;
   if (octave > MIDI_OCTAVE_MAX) {
     octave = MIDI_OCTAVE_MAX;
   }

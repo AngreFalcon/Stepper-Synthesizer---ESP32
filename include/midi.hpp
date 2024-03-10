@@ -137,6 +137,8 @@ class midiFile {
     // which for our purposes is acceptable
     uint32_t eventData = 0;
 
+    uint8_t track = 0;
+
     // ## true to isolate our event type, false to isolate our channel
     // this is a simple function that performs common bit manipulation
     // on our 8 bit integers to separate values out of a single byte
@@ -163,7 +165,7 @@ class midiFile {
   // this function takes as a parameter an index to our track chunk vector
   // it will then read in from our midi file until the current track chunk
   // is fully parsed, then exit. returns false if an error occurs
-  bool populateTrackChunks(const uint32_t index, std::deque<midiEvent>& trackData);
+  bool populateTrackChunks(const uint8_t trackNum, std::deque<midiEvent>& trackData);
 
   // with this function we check the type of midi event that we're reading
   uint8_t readMidiEvent(uint8_t& prevEvent, uint8_t& eventType);
@@ -207,7 +209,11 @@ class midiFile {
   // into a queue where they will be ready for playback
   void enqueueEvents(std::deque<midiEvent>& trackData);
 
+  void analyzeOverlaps(const std::deque<midiEvent>& trackData);
+
   public:
+  std::vector<bool> trackPolyphony;
+  
   // a pointer to an array of unsigned 8 bit integers
   // containing the entirety of our midi file is passed in to this function
   // which attached that array to our byteArray
@@ -228,8 +234,8 @@ class midiFile {
 };
 
 namespace midi {
-  // this array is used to define the frequencies of each note within octave -1, multiplied by 1000 to ensure decimal accuracy
-  const std::array<uint16_t, 12> noteFreq = { 8175, 8660, 9175, 9725, 10300, 10915, 11560, 12250, 12980, 13750, 14570, 15435 };
+  // this array is used to define the frequencies of each note within octave 0, represented in mHz
+  const std::array<uint16_t, 12> noteFreq = { 16350, 17320, 18350, 19450, 20600, 21830, 23120, 24500, 25960, 27500, 29140, 30870 };
 
   // takes a note frequency and octave and returns the new frequency of the note
   // at the given octave in Hz. returns 0 if note or octave are invalid

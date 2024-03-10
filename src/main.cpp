@@ -28,7 +28,7 @@ void loop() {
 
     // update our variable to now store the new time
     // since our last button press event   
-    timeElapsedOld = timeElapsedNew;           
+    timeElapsedOld = timeElapsedNew;
   }
 
   // update our display with our cursor's location if it has changed

@@ -66,33 +66,29 @@ uint8_t findActiveStepper(const std::array<NoteChannel, STEPPER_CHANNELS>& activ
   return NOT_FOUND;
 }
 
-void playNote(const uint32_t deltaTime, const uint32_t note, const uint8_t event, std::stringstream& debugString) {
+void playNote(const uint32_t deltaTime, const uint32_t note, const uint8_t event, const bool polyphonic, std::stringstream& debugString) {
   const uint8_t channel = (event & 0x0F), eventType = (event >> 4);
   static std::array<NoteChannel, STEPPER_CHANNELS> activeChannels {};
   delayMicroseconds(deltaTime);
 
   uint8_t stepperIdx = NOT_FOUND;
   if (eventType == MIDI_NOTE_ON >> 4) {
-    stepperIdx = findStepperPreferPoly(activeChannels, channel);
-    if (stepperIdx == NOT_FOUND) {
-      return;
+    stepperIdx = polyphonic ? findStepperPreferPoly(activeChannels, channel) : findStepperPreferMono(activeChannels, channel);
+    if (stepperIdx != NOT_FOUND) {
+      activeChannels[stepperIdx].channel = channel;
+      activeChannels[stepperIdx].note = note;
+      stepper[stepperIdx]->setSpeedInMilliHz(note);
+      stepper[stepperIdx]->runForward();
     }
-    activeChannels[stepperIdx].channel = channel;
-    activeChannels[stepperIdx].note = note;
-    stepper[stepperIdx]->setSpeedInMilliHz(note);
-    while (stepper[stepperIdx]->isStopping())
-      ;
-    stepper[stepperIdx]->runForward();
   }
   else {
     stepperIdx = findActiveStepper(activeChannels, note, channel);
-    if (stepperIdx == NOT_FOUND) {
-      return;
+    if (stepperIdx != NOT_FOUND) {
+      activeChannels[stepperIdx].channel = NO_CHANNEL;
+      stepper[stepperIdx]->stopMove();
     }
-    activeChannels[stepperIdx].channel = NO_CHANNEL;
-    stepper[stepperIdx]->stopMove();
   }
 
-  debugString << " - DeltaTime in uS: " << deltaTime << " | Event: " << (uint16_t)event << " | Note in mHz: " << note;
+  debugString << " - DeltaTime in uS: " << deltaTime << " | Event: " << (uint16_t)event << " | Note in mHz: " << note << " | Stepper Index: " << std::to_string(stepperIdx);
   return;
 }
