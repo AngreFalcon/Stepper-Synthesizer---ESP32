@@ -4,7 +4,7 @@
 #include "sdio-directoryContents.hpp"
 
 // this is the object that tft_espi uses to interface with our display
-TFT_eSPI tft = TFT_eSPI(); 
+TFT_eSPI tft = TFT_eSPI();
 
 void initializeDisplay(void) {
   tft.begin();
@@ -26,17 +26,17 @@ void refreshDisplay(void) {
   // must lock value to avoid race condition;
   // attempting to access prevEncoderValue appears to
   // on occasion result in crash due to memory access violation
-  uint8_t lockedEncoderValue = prevEncoderValue;               
+  uint8_t lockedEncoderValue = prevEncoderValue;
 
   // we use this value to find the index offset
-  // needed to print our text to the screen                              
-  uint8_t page = (lockedEncoderValue / DISPLAY_LINES_PER_SCREEN) * DISPLAY_LINES_PER_SCREEN; 
+  // needed to print our text to the screen
+  uint8_t page = (lockedEncoderValue / DISPLAY_LINES_PER_SCREEN) * DISPLAY_LINES_PER_SCREEN;
 
   // make sure we don't attempt to update the display
   // if there are no directory contents to display
   // this is to ensure we do not accidentally print directory contents
   // that do not actually exist
-  if (myDir.contents.size() < 2 && !redrawDisplay) {                                           
+  if (myDir.contents.size() < 2 && !redrawDisplay) {
     return;
   }
   if (redrawDisplay) {

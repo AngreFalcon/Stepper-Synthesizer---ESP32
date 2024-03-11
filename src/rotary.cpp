@@ -7,16 +7,16 @@
 // the rotary encoder library uses this object to keep track of inputs
 // in between interrupts so that information is not lost during rapid actuation
 // of our encoder
-QueueHandle_t encoderQueue;          
+QueueHandle_t encoderQueue;
 
 // this is the object that references our rotary encoder
 // and is used for tracking attributes such as direction of input
-NewEncoder* encoder;                 
+NewEncoder* encoder;
 
 // here we define the lower limit of our encoder value
 // as a default, this will be zero; once hitting the upper limit
 // we should cycle around to the lower limit
-const uint8_t encoderLowerLimit = 0; 
+const uint8_t encoderLowerLimit = 0;
 
 bool initializeRotary(void) {
   BaseType_t success = xTaskCreatePinnedToCore(handleEncoder, "Handle Encoder", 1900, NULL, 2, NULL, 1);
@@ -35,7 +35,7 @@ bool initializeRotary(void) {
 
 void handleEncoder(void* pvParameters) {
   NewEncoder::EncoderState currentEncoderstate;
-  int16_t currentValue; 
+  int16_t currentValue;
   encoderQueue = xQueueCreate(1, sizeof(NewEncoder::EncoderState));
 
   // this conditional ensures that the encoder queue initialized successfully
@@ -44,7 +44,7 @@ void handleEncoder(void* pvParameters) {
       Serial.println("Failed to create encoderQueue. Aborting");
     }
     vTaskDelete(nullptr);
-  } 
+  }
   encoder = new NewEncoder(ROTARY_CLK, ROTARY_DT, encoderLowerLimit, encoderUpperLimit, encoderLowerLimit, FULL_PULSE);
 
   // this conditional ensures that the encoder object allocated successfully
@@ -53,7 +53,7 @@ void handleEncoder(void* pvParameters) {
       Serial.println("Failed to allocate NewEncoder object. Aborting.");
     }
     vTaskDelete(nullptr);
-  } 
+  }
 
   // this conditional ensures that the encoder object started successfully
   if (!encoder->begin()) {
@@ -62,7 +62,7 @@ void handleEncoder(void* pvParameters) {
     }
     delete encoder;
     vTaskDelete(nullptr);
-  } 
+  }
 
   encoder->getState(currentEncoderstate);
   prevEncoderValue = currentEncoderstate.currentValue;
@@ -75,7 +75,8 @@ void handleEncoder(void* pvParameters) {
   for (;;) {
     xQueueReceive(encoderQueue, &currentEncoderstate, portMAX_DELAY);
     currentValue = currentEncoderstate.currentValue;
-    timeElapsedOld = timeElapsedNew;
+    timeElapsedOld = millis();
+    rotaryButtonPressed = false;
     if (currentValue != prevEncoderValue) {
       if (prevEncoderValue / DISPLAY_LINES_PER_SCREEN != currentValue / DISPLAY_LINES_PER_SCREEN) {
         redrawDisplay = true;
@@ -95,7 +96,9 @@ void ESP_ISR callBack(NewEncoder* encPtr, const volatile NewEncoder::EncoderStat
 }
 
 void IRAM_ATTR rotaryButton(void) {
-  timeElapsedNew = millis();
+  if (millis() - timeElapsedOld > 250 && !rotaryButtonPressed) {
+    rotaryButtonPressed = true;
+  }
   return;
 }
 
@@ -106,7 +109,7 @@ bool updateSettings(void) {
 }
 
 // currently not used
-uint8_t upOrDown(void) { 
+uint8_t upOrDown(void) {
   NewEncoder::EncoderState state;
   encoder->getState(state);
   return state.currentClick;

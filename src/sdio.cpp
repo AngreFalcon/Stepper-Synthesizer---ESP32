@@ -6,10 +6,10 @@
 #include <queue>
 
 // this file object is used to open and access the contents of our selected file
-FsFile loadedFile; 
+FsFile loadedFile;
 
 // this object is used to initialize and access the contents of our SD card
-SdFs sd;           
+SdFs sd;
 
 bool initializeSDCard(void) {
   if (SERIAL_DEBUG) {
@@ -76,25 +76,25 @@ void navigateDirectories(void) {
 
   // ensure that our encoder isn't pointing to a file object that doesn't exist
   // and that we aren't trying to navigate to a higher directory from root
-  if (lockedEncoderValue >= myDir.contents.size() || (lockedEncoderValue + myDir.getDirPathSize() - 1 == 0)) { 
+  if (lockedEncoderValue >= myDir.contents.size() || (lockedEncoderValue + myDir.getDirPathSize() - 1 == 0)) {
     return;
   }
 
   // if the user wants to navigate to a parent directory
   // or the current working directory is empty
   // move up a layer in our file structure
-  else if ((lockedEncoderValue == 0 || myDir.contents.size() <= 1) && myDir.getDirPathSize() > 1) { 
+  else if ((lockedEncoderValue == 0 || myDir.contents.size() <= 1) && myDir.getDirPathSize() > 1) {
     myDir.popWorkingDir();
   }
 
   // if the user selects a file object that is a directory
   // navigate to that directory
-  else if (lockedEncoderValue <= myDir.containedDirs && myDir.contents.size() > 1) { 
+  else if (lockedEncoderValue <= myDir.containedDirs && myDir.contents.size() > 1) {
     myDir.pushWorkingDir(myDir.contents[lockedEncoderValue]);
   }
 
   // if all other cases are false, the user selected a file
-  else { 
+  else {
     openMidi(lockedEncoderValue);
     return;
   }
@@ -104,7 +104,7 @@ void navigateDirectories(void) {
 }
 
 // currently not used
-bool dirEmpty(FsFile* dir) { 
+bool dirEmpty(FsFile* dir) {
   FsFile myFile;
   return !myFile.openNext(dir, SD_FILE_READ);
 }
@@ -149,7 +149,7 @@ void openMidi(const uint8_t index) {
     return;
   }
   if (SERIAL_DEBUG) {
-    //songData.printQueue();
+    // songData.printQueue();
   }
   songData.playMidi();
   return;

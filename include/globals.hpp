@@ -1,6 +1,7 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <Arduino.h>
+#include <atomic>
 
 // this macro is intended to enable or disable serial monitor print statements
 #define SERIAL_DEBUG true
@@ -141,10 +142,12 @@ extern bool redrawDisplay;
 // time elapsed since the last time our rotary button was pushed
 // this will be used to safeguard against unintended button presses
 // or multi-inputs
-extern unsigned long timeElapsedOld;
+extern volatile std::atomic<unsigned long> timeElapsedOld;
 
 // this variable will store the time the moment the rotary button is pushed
 // which will then be compared against timeElapsedOld
-extern unsigned long timeElapsedNew;
+// extern volatile unsigned long timeElapsedNew;
+
+extern volatile std::atomic<bool> rotaryButtonPressed;
 
 #endif
