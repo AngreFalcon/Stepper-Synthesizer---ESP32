@@ -336,8 +336,6 @@ void midiFile::printQueue(void) {
 }
 
 uint32_t midi::getFreq(const uint8_t note) {
-  // uint8_t index = ((note + 1) & 0x7F) % noteFreq.size();
-  // int8_t octave = ((note + 1) / noteFreq.size()) - 1;
   uint8_t index = (note & 0x7F) % noteFreq.size();
   int8_t octave = (note / noteFreq.size()) - 1;
   if (octave > MIDI_OCTAVE_MAX) {

@@ -213,7 +213,7 @@ class midiFile {
 
   public:
   std::vector<bool> trackPolyphony;
-  
+
   // a pointer to an array of unsigned 8 bit integers
   // containing the entirety of our midi file is passed in to this function
   // which attached that array to our byteArray
