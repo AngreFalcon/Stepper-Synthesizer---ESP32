@@ -18,19 +18,19 @@ NewEncoder* encoder;
 // we should cycle around to the lower limit
 const uint8_t encoderLowerLimit = 0;
 
-bool initializeRotary(void) {
+void initializeRotary(void) {
   BaseType_t success = xTaskCreatePinnedToCore(handleEncoder, "Handle Encoder", 1900, NULL, 2, NULL, 1);
   if (!success) {
     if (SERIAL_DEBUG) {
       printf("Failed to create handleEncoder task. Aborting.\n");
     }
-    return success;
+    return;
   }
   pinMode(ROTARY_CLK, INPUT);
   pinMode(ROTARY_DT, INPUT);
   pinMode(ROTARY_SW, INPUT);
   attachInterrupt(ROTARY_SW, rotaryButton, RISING);
-  return success;
+  return;
 }
 
 void handleEncoder(void* pvParameters) {

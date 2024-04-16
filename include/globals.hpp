@@ -50,6 +50,15 @@
 // pins for stepper motor actuation
 #define MTR_STEPS 4, 32, 33, 25
 
+// pin for UART transfer of MIDI input data
+#define UART_TX 17
+
+// pin for UART receive of MIDI input data
+#define UART_RX 22
+
+// baud rate for UART communication. 31250 is typical for MIDI data communication
+#define UART_BAUD 31250
+
 /*VSPI*/
 // master input/slave output for SD card reader
 #define SD_MISO 19

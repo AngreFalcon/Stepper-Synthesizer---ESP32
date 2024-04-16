@@ -5,6 +5,7 @@
 #include "rotary.hpp"
 #include "sdio.hpp"
 #include "stepper.hpp"
+#include "uart.hpp"
 
 void setup() {
   // Open serial communications and wait for port to open:
@@ -16,6 +17,7 @@ void setup() {
   initializeDisplay();
   initializeSDIndic(initializeSDCard());
   initializeStepper();
+  initializeUART();
 }
 
 void loop() {
@@ -52,4 +54,6 @@ void loop() {
     // once reinitialization of sd card succeeds, update indicator
     sdInitStatus(true);
   }
+
+  //checkMIDI();
 }

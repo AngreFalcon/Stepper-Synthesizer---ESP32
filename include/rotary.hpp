@@ -5,7 +5,7 @@
 // used to configure parameters for our rotary encoder such as
 // upper and lower limits, as well as attach our interrupt
 // to handle rotary encoder events
-bool initializeRotary(void); 
+void initializeRotary(void); 
 
 void handleEncoder(void* pvParameters);
 

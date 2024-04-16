@@ -8,7 +8,7 @@ TFT_eSPI tft = TFT_eSPI();
 
 void initializeDisplay(void) {
   tft.begin();
-  tft.setRotation(1);
+  tft.setRotation(3);
   tft.setTextDatum(TL_DATUM);
   tft.setTextPadding(DISPLAY_HORIZONTAL_PADDING);
   tft.setTextColor(DISPLAY_TEXT, DISPLAY_BG);
